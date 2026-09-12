@@ -1,12 +1,29 @@
-from sklearn.model_selection import train_test_split
-from sklearn.ensemble import RandomForestRegressor
-from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
-import numpy as np
+import os
+
 import joblib
+import numpy as np
 import pandas as pd
 
-df = pd.read_csv("house-prices/train.csv")
+from sklearn.ensemble import RandomForestRegressor
+from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
+from sklearn.model_selection import train_test_split
 
+
+# --------------------------------------------------
+# House Price Prediction - Model Training
+# --------------------------------------------------
+# This script is used only to train the ML model.
+# The trained model is later used by app.py.
+# --------------------------------------------------
+
+
+DATA_PATH = "house-prices/train.csv"
+
+MODEL_PATH = "house_price_selected_model.pkl"
+FEATURES_PATH = "selected_features.pkl"
+
+
+# Selected features used by the final model
 selected_features = [
     "OverallQual",
     "YearBuilt",
@@ -25,14 +42,51 @@ selected_features = [
     "OpenPorchSF"
 ]
 
+
+# --------------------------------------------------
+# Check dataset
+# --------------------------------------------------
+
+if not os.path.exists(DATA_PATH):
+    print("Dataset not found!")
+    print(f"Please place train.csv inside: {DATA_PATH}")
+    print("This script is only required when training/retraining the model.")
+    raise SystemExit
+
+
+# --------------------------------------------------
+# Load dataset
+# --------------------------------------------------
+
+df = pd.read_csv(DATA_PATH)
+
+print("Dataset loaded successfully!")
+print("Shape:", df.shape)
+
+
+# --------------------------------------------------
+# Features and target
+# --------------------------------------------------
+
 X = df[selected_features]
 y = df["SalePrice"]
 
+
+# --------------------------------------------------
+# Train / Test Split
+# --------------------------------------------------
+
 X_train, X_test, y_train, y_test = train_test_split(
-    X, y,
+    X,
+    y,
     test_size=0.2,
     random_state=42
 )
+
+
+# --------------------------------------------------
+# Random Forest Model
+# --------------------------------------------------
 
 model = RandomForestRegressor(
     n_estimators=200,
@@ -44,22 +98,52 @@ model = RandomForestRegressor(
     n_jobs=-1
 )
 
+
+# --------------------------------------------------
+# Train
+# --------------------------------------------------
+
+print("\nTraining model...")
+
 model.fit(X_train, y_train)
+
+
+# --------------------------------------------------
+# Prediction
+# --------------------------------------------------
 
 y_pred = model.predict(X_test)
 
+
+# --------------------------------------------------
+# Evaluation
+# --------------------------------------------------
+
 mae = mean_absolute_error(y_test, y_pred)
+
 mse = mean_squared_error(y_test, y_pred)
+
 rmse = np.sqrt(mse)
+
 r2 = r2_score(y_test, y_pred)
 
-print("Selected Feature Model")
+
+print("\nSelected Feature Model")
 print("----------------------")
 print("MAE:", mae)
 print("RMSE:", rmse)
 print("R²:", r2)
 
-joblib.dump(model, "house_price_selected_model.pkl")
-joblib.dump(selected_features, "selected_features.pkl")
 
-print("Model saved successfully!")
+# --------------------------------------------------
+# Save model and selected features
+# --------------------------------------------------
+
+joblib.dump(model, MODEL_PATH)
+
+joblib.dump(selected_features, FEATURES_PATH)
+
+
+print("\nModel saved successfully!")
+print("Model:", MODEL_PATH)
+print("Features:", FEATURES_PATH)
